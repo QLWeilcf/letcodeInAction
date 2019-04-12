@@ -588,6 +588,140 @@ class Solution(object):
 
         return -1
 ```
+## 34. Find First and Last Position of Element in Sorted Array
+- 2019-04-09
+
+排序了的数组，不用说太多，二分搜索，当然这题也有些小心机，处理好大于等于小于的情况，下面是官方代码：
+
+```python
+class Solution(object):
+    def searchRange(self, nums, target):
+        """
+        :type nums: List[int]
+        :type target: int
+        :rtype: List[int]
+        """
+        left_idx = self.extreme_insertion_index(nums, target, True)
+
+        # assert that `left_idx` is within the array bounds and that `target`
+        # is actually in `nums`.
+        if left_idx == len(nums) or nums[left_idx] != target:
+            return [-1, -1]
+        return [left_idx, self.extreme_insertion_index(nums, target, False)-1]
+    def extreme_insertion_index(self, nums, target, left):
+        lo = 0
+        hi = len(nums)
+
+        while lo < hi:
+            mid = (lo + hi) // 2
+            if nums[mid] > target or (left and target == nums[mid]):
+                hi = mid
+            else:
+                lo = mid+1
+
+        return lo
+```
+## 27. Remove Element
+- 2019-04-10
+
+把等于目标值的数从数组中原地删除，不能用超过O(n)的额外空间，这个的实现还是很值得思考的。当然实际中多用空间也不失为太差的解法，巨量数据时反复移动不一定比加到新数组优秀。
+```python
+class Solution(object):
+    def removeElement(self, nums, val):
+        """
+        :type nums: List[int]
+        :type val: int
+        :rtype: int
+        """
+        nextPos = 0
+        for num in nums:
+            if num != val:
+                nums[nextPos] = num
+                nextPos += 1
+        return nextPos
+```
+在评论区看到一种暴力方法，当然这种方法值得质疑和思考
+```python
+def removeElement(self, nums, val):
+    try:
+        while True:
+            nums.remove(val)
+    except:
+        return len(nums)
+```
+> Since we don't know the implementation of the remove func, so you cannot make sure it fits the limitation of O(1) memory 
+(不知道remove的机制，不能保证满足O(1)的空间限制)
+> 列表每次Delete Item是O(n)，所以加上while会是O(n^2)，确实暴力。
+## 39. Combination Sum
+- 2019-04-11
+
+一个需要遍历各种情况的题，比较好的解法是动规或深度优先搜索。
+```python
+class Solution(object):
+    def combinationSum(self, candidates, target):
+        """
+        :type candidates: List[int]
+        :type target: int
+        :rtype: List[List[int]]
+        """
+        candidates.sort() #动规
+        dp = [[[]]] + [[] for i in xrange(target)]
+        for i in xrange(1, target + 1):
+            for number in candidates:
+                if number > i: break
+                for L in dp[i - number]:
+                    if not L or number >= L[-1]: dp[i] += L + [number],
+        return dp[target]
+```
+dfs的解法：
+```python
+def combinationSum(self, candidates, target):
+    res = []
+    candidates.sort()
+    self.dfs(candidates, target, 0, [], res)
+    return res
+    
+def dfs(self, nums, target, index, path, res):
+    if target < 0:
+        return  # backtracking
+    if target == 0:
+        res.append(path)
+        return 
+    for i in xrange(index, len(nums)):
+        self.dfs(nums, target-nums[i], i, path+[nums[i]], res)
+```
+## 48. Rotate Image
+- 2019-04-12
+
+ in-place是值得思考的，暴力法是用O(N^2)的额外空间，我试了一下，是5.30%的空间优先率，很低了。
+ ```python
+ class Solution(object):
+    def rotate(self, matrix):#暴力法
+        nm=[]
+        n=len(matrix) #i==j
+        i,j=0,0
+        for i in range(n):
+            m=[matrix[j][i] for j in range(n-1,-1,-1)]
+            nm.append(m)
+        for i in range(n):
+            for j in range(n):
+                matrix[i][j]=nm[i][j]
+    def rotate2n2(self,matrix):
+        matrix[::] = zip(*matrix[::-1]) # matrix[::-1]->O(n^2), zip()-> O(n^2), 
+        #although matrix[::] ask for an in-place replacement, take extra O(2n^2) extra space.
+    def rotate2(self, matrix):
+        n = len(matrix)#这种方法没去验证
+        for l in xrange(n / 2):
+            r = n - 1 - l
+            for p in xrange(l, r):
+                q = n - 1 - p #q=~p  
+                cache = matrix[l][p]
+                matrix[l][p] = matrix[q][l]
+                matrix[q][l] = matrix[r][q]
+                matrix[r][q] = matrix[p][r]
+                matrix[p][r] = cache
+ ```
+
 
 
 
