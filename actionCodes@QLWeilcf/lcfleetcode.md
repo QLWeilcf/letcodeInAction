@@ -721,13 +721,677 @@ def dfs(self, nums, target, index, path, res):
                 matrix[r][q] = matrix[p][r]
                 matrix[p][r] = cache
  ```
+## 37. Sudoku Solver
+- 2019-04-13
+
+必须独立解出来的题；
+```python
+class Solution(object):
+    def solveSudoku(self, board):
+        """
+        :type board: List[List[str]]
+        :rtype: None Do not return anything, modify board in-place instead.
+        """
+        self.board = board
+        self.solve()
+    
+    def findUnassigned(self):
+        for row in range(9):
+            for col in range(9):
+                if self.board[row][col] == ".":
+                    return row, col
+        return -1, -1
+    
+    def solve(self):
+        row, col = self.findUnassigned()
+        #no unassigned position is found, puzzle solved
+        if row == -1 and col == -1:
+            return True
+        for num in ["1","2","3","4","5","6","7","8","9"]:
+            if self.isSafe(row, col, num):
+                self.board[row][col] = num
+                if self.solve():
+                    return True
+                self.board[row][col] = "."
+        return False
+            
+    def isSafe(self, row, col, ch):
+        boxrow = row - row%3
+        boxcol = col - col%3
+        if self.checkrow(row,ch) and self.checkcol(col,ch) and self.checksquare(boxrow, boxcol, ch):
+            return True
+        return False
+    
+    def checkrow(self, row, ch):
+        for col in range(9):
+            if self.board[row][col] == ch:
+                return False
+        return True
+    
+    def checkcol(self, col, ch):
+        for row in range(9):
+            if self.board[row][col] == ch:
+                return False
+        return True
+       
+    def checksquare(self, row, col, ch):
+        for r in range(row, row+3):
+            for c in range(col, col+3):
+                if self.board[r][c] == ch:
+                    return False
+        return True
+```
+## 47. Permutations II
+- 2019-04-14
+
+和46题的区别是这次输入可以包含重复的数字，例如可以输入`[1,1,2]`，有更巧妙的解法，但暴力法是用46题的递归然后对生成的结果去重（最后去重或每次递归都去重）
+
+```python
+class Solution(object):
+    def permuteUnique(self, nums):
+        """
+        :type nums: List[int]
+        :rtype: List[List[int]]
+        """
+        n=len(nums)
+        if n<=1:
+            return [nums]
+        elif n==2: #注意这部分输入的坑
+            if nums[0]==nums[1]:
+                return [nums]
+            return [[nums[0],nums[1]],[nums[1],nums[0]]]
+        kk=[]
+        for i in range(n):
+            nlst=nums[0:i]+nums[i+1:] 
+            c=self.permuteUnique(nlst)
+            ss=[]
+            for j in c:
+                w=[nums[i]]
+                w.extend(j)
+                ss.append(w)
+            kk.extend(ss)
+            ks=[]
+            for k in kk:
+                if k not in ks:
+                    ks.append(k)
+            kk=ks
+        return kk
+```
+## 50. Pow(x, n)
+- 2019-04-15
+
+自己去实现乘方。因为输入的n是包含负数且到2^31-1，还是需要考虑边界和超限的，在Python里这些问题比较容易解决。说回实现上，暴力法是直接循环n次算乘法，我知道还有递推公式，只记得了偶数`x^n=x^{n/2}*x^{n/2}`；奇数`x^n=x^{n/2}*x^{n/2}*x`；在《编程之美》里还有迭代法，之后再研究。
+```python
+class Solution(object):
+    def myPow(self, x, n):
+        if n==0:
+            return 1
+        elif n==1:
+            return x
+        npow=True if n<0 else False
+        if npow: #负数的情况，只需要在递归的最后一次变成倒数就好，递归里面用正数算
+            n=-n
+            kx=self.myPow(x,n//2)
+            if n%2==0:#偶数
+                return 1/(kx*kx)
+            else:
+                return 1/(kx*kx*x)
+        else:
+            kx=self.myPow(x,n//2)
+            if n%2==0:#偶数
+                return kx*kx
+            else:
+                return kx*kx*x
+```
+## 35. Search Insert Position
+- 2019-04-16
+
+排序数组，显然最优是用二分；
+
+```python
+class Solution(object):
+    def searchInsert(self, nums, target):
+        if target > nums[len(nums) - 1]:
+            return len(nums)
+
+        if target < nums[0]:
+            return 0
+
+        l, r = 0, len(nums) - 1
+        while l <= r:
+            m = (l + r)/2
+            if nums[m] > target:
+                r = m - 1
+                if r >= 0:
+                    if nums[r] < target:
+                        return r + 1
+                else:
+                    return 0
+
+            elif nums[m] < target:
+                l = m + 1
+                if l < len(nums):
+                    if nums[l] > target:
+                        return l
+                else:
+                    return len(nums)
+            else:
+                return m
+```
+在评论区发现一些很神奇的解法：一行：`return len([x for x in nums if x<target])`  O(n);
+```python
+try:
+    return nums.index(target)
+except:
+    nums.append(target)
+    nums.sort() #O(nlog(n))
+    return nums.index(target)
+```
+## 19. Remove Nth Node From End of List
+- 2019-04-17
+
+链表题，复杂度不高，但要实现很高效也比较有挑战
+
+```python
+class Solution(object):
+    def removeNthFromEnd(self, head, n):
+        """
+        :type head: ListNode
+        :type n: int
+        :rtype: ListNode
+        """
+        fast = slow = head
+        for _ in range(n):
+            fast = fast.next
+        if not fast:
+            return head.next
+        while fast.next:
+            fast = fast.next
+            slow = slow.next
+        slow.next = slow.next.next
+        return head
+```
+## 56. Merge Intervals
+- 2019-04-18
+
+合并区间，不排序的话就需要每次比较时往前看（一个while或for循环在一个for循环里），需要O(n^2)，因此还是排序吧，根据首个元素排序后的判断就容易了
+```python
+class Solution(object):
+    def merge(self, intervals):
+        """
+        :type intervals: List[List[int]]
+        :rtype: List[List[int]]
+        """
+        if not intervals:
+            return []
+        intervals=sorted(intervals,key=lambda j:j[0])
+        res=[]
+        cur=intervals[0]
+        res.append(cur)
+        for i in intervals:
+            if res[-1][1]>=i[0] and res[-1][1]<i[1]:
+                res[-1][1]=i[1]
+            elif res[-1][1]<i[0]:
+                res.append(i)
+            else:
+                pass
+        return res
+```
+官方解法，list.start这种写法在自己的编译器上运行不了，查2.7.1和3.7的官方文档都没有。`AttributeError: 'list' object has no attribute 'start'`
+
+```python
+class Solution:#官方解法
+    def merge(self, intervals):
+        intervals.sort(key=lambda x: x.start)
+        merged = []
+        for interval in intervals:
+            # if the list of merged intervals is empty or if the current
+            # interval does not overlap with the previous, simply append it.
+            if not merged or merged[-1].end < interval.start:
+                merged.append(interval)
+            else:
+            # otherwise, there is overlap, so we merge the current and previous
+            # intervals.
+                merged[-1].end = max(merged[-1].end, interval.end)
+        return merged
+```
+## 59. Spiral Matrix II
+- 2019-04-18
+
+这次不是展开螺旋矩阵了，是生成；
+```python
+class Solution(object):
+    def generateMatrix(self, n):
+        """
+        :type n: int
+        :rtype: List[List[int]]
+        """
+        A = [[0] * n for _ in range(n)]
+        i, j, di, dj = 0, 0, 0, 1
+        for k in range(n*n):
+            A[i][j] = k + 1
+            if A[(i+di)%n][(j+dj)%n]:
+                di, dj = dj, -di
+            i += di
+            j += dj
+        return A
+```
+## 38. Count and Say
+- 2019-04-19
+
+这是个easy题，还是很巧妙的，计算n时n-1情况下值的计数形成一个新数（返回值为str类型），n取决于n-1，所以有递推，推导出递推式子后写递归。关键是统计出连续的值有多少个，在连续时，count，不连续时换新的count。
+```python
+class Solution(object):
+    def countAndSay(self, n):
+        if n==1: #终止条件
+            return '1'
+        res=''
+        nm=self.countAndSay(n-1)
+        k=len(nm)
+        cv=[nm[0],0]  #当前计数的值 可以用dict {nm[0]:0}
+        for i in nm:
+            if i==cv[0]:
+                cv[1]=cv[1]+1
+            else: #不连续时，记录之前的状态+重置cv
+                res='{0}{1}{2}'.format(res,cv[1],cv[0])
+                cv=[i,1]
+        res='{0}{1}{2}'.format(res,cv[1],cv[0])
+        return res
+
+```
+## 62. Unique Paths
+- 2019-04-20
+
+这是很有趣的题，用动规解，记得可以推出一个规则的。
+```python
+class Solution(object):
+    def uniquePaths(self, m, n):
+        dp = [1] * n
+        for i in range(1, m):
+            for j in range(1, n):
+                dp[j] = dp[j - 1] + dp[j]
+        return dp[-1] if m and n else 0
+```
+## 64. Minimum Path Sum
+- 2019-04-21
+
+这种全局最优显然要考虑递归，类似背包问题。
+```python
+class Solution(object):
+    def minPathSum(self, grid):
+        """
+        :type grid: List[List[int]]
+        :rtype: int
+        """
+        c,r = len(grid),len(grid[0])    
+        for i in range(c):
+            for j in range(r):
+                if i ==0 and j ==0:
+                    continue
+                elif i == 0:
+                    grid[i][j] += grid[i][j-1]
+                elif j == 0:
+                    grid[i][j] += grid[i-1][j]
+                else:
+                    grid[i][j] += min(grid[i][j-1], grid[i-1][j])              
+        return grid[-1][-1]
+```
+## 53. Maximum Subarray
+- 2019-04-22
+
+这题乍看上去需要循环尝试很多，看到一种很厉害的解法：
+```python
+class Solution(object):
+    def maxSubArray(self, nums):
+        """
+        :type nums: List[int]
+        :rtype: int
+        """
+        for i in range(1, len(nums)):
+            if nums[i-1] > 0:
+                nums[i] += nums[i-1]
+        return max(nums)
+```
+## 74. Search a 2D Matrix
+
+- 2019-04-23
+
+简单搜索比较容易，O(log(n))解法还是挺难想的：
+```
+class Solution(object):
+    def searchMatrix(self, matrix, target):
+        """
+        :type matrix: List[List[int]]
+        :type target: int
+        :rtype: bool
+        """
+        if not matrix or target is None:
+            return False
+
+        rows, cols = len(matrix), len(matrix[0])
+        low, high = 0, rows * cols - 1
+        
+        while low <= high:
+            mid = (low + high) / 2
+            num = matrix[mid / cols][mid % cols]
+
+            if num == target:
+                return True
+            elif num < target:
+                low = mid + 1
+            else:
+                high = mid - 1
+        
+        return False
+```
+## 77. Combinations
+
+- 2019-04-24
+
+组合，实现C{n,m}，itertools里有轮子combinations
+```
+if k == 0:
+            return [[]]
+        return [pre + [i] for i in range(k, n+1) for pre in self.combine(i-1, k-1)]
+```
+可能更好理解些：
+```
+class Solution:
+    def combine(self, n, k):
+        stack = []
+        res = []
+        l, x = 0, 1
+        while True:
+            
+            if l == k:
+                res.append(stack[:])
+            if l == k or n-x+1 < k-l:
+                if not stack:
+                    return res
+                x = stack.pop() + 1
+                l -= 1
+            else:
+                stack.append(x)
+                x += 1
+                l += 1
+```
+## 66. Plus One 
+- 2019-04-25
+
+easy题
+```python
+class Solution(object):
+    def plusOne(self, digits):
+        digits[-1] += 1
+        for i in range(len(digits)-1, 0, -1):
+            if digits[i] != 10:
+                break
+            digits[i] = 0
+            digits[i-1] += 1
+    
+        if digits[0] == 10:
+            digits[0] = 0
+            digits.insert(0,1)
+        return digits
+```
+## 78. Subsets
+- 2019-04-26
+
+求一个集合的所有子集，
+```python
+class Solution(object):
+    def subsets(self, nums):
+        res = [[]]
+        for num in sorted(nums):
+            res =res+ [item+[num] for item in res]
+        return res
+```
+## 90. Subsets II
+- 2019-04-29
+
+和原先子集题（78）的区别是这个可以有重复元素；
+```python
+class Solution(object):
+    def subsetsWithDup(self, nums):
+        if not nums:
+            return []
+        nums.sort()
+        res, cur = [[]], []
+        for i in range(len(nums)):
+            if i > 0 and nums[i] == nums[i-1]:
+                cur = [item + [nums[i]] for item in cur]
+            else:
+                cur = [item + [nums[i]] for item in res]
+            res += cur
+        return res
+```
 
 
 
+## 80. Remove Duplicates from Sorted Array II
+- 2019-04-27
+
+要在O(1)空间内实现，就靠循环和if了；
+```python
+class Solution(object):
+    def removeDuplicates(self, nums):
+        i = 0
+        for n in nums:
+            if i < 2 or n > nums[i-2]:
+                nums[i] = n
+                i += 1
+        return i
+```
+## 67. Add Binary
+- 2019-04-28
+
+用二进制的进位逻辑去算，不过输入输出都是字符串，不过就0，1两种字符，不需要转int了
+```python
+class Solution(object):
+    def addBinary(self, a, b):#按逐个进位写的巨长的代码
+        na=len(a)
+        nb=len(b)
+        res=[]
+        rf={'0':0,'1':1}
+        aone=0 #进位 add new one
+        if na<nb:
+            for i in range(na):
+                r=rf[a[na-i-1]]+rf[b[nb-i-1]]+aone
+                if r==3:
+                    res.append('1')
+                    aone=1
+                elif r==2:
+                    res.append('0')
+                    aone=1
+                elif r==1:
+                    res.append('1') #0 or 1
+                    aone=0 #?
+                elif r==0:
+                    res.append('0')
+                    aone=0
+                    
+            for i in range(nb-na-1,-1,-1):
+                r=rf[b[i]]+aone
+                if r==2:
+                    res.append('0') #aone=1
+                elif r==1:
+                    res.append('1')
+                    aone=0
+                elif r==0:
+                    res.append('0')
+                    aone=0
+        else:#na>=nb
+            for i in range(nb):
+                r=rf[a[na-i-1]]+rf[b[nb-i-1]]+aone
+                if r==3:
+                    res.append('1')
+                    aone=1
+                elif r==2:
+                    res.append('0')
+                    aone=1
+                elif r==1:
+                    res.append('1') #0 or 1
+                    aone=0 #?
+                elif r==0:
+                    res.append('0')
+                    aone=0
+            for i in range(na-nb-1,-1,-1):
+                r=rf[a[i]]+aone
+                if r==2:
+                    res.append('0') #aone=1
+                elif r==1:
+                    res.append('1')
+                    aone=0
+                elif r==0:
+                    res.append('0')
+                    aone=0
+        if aone==1:
+            res.append('1')
+        ors=[]
+        for i in range(len(res),0,-1):
+            ors.append(res[i-1])
+        return ''.join(ors)
+```
+而看讨论区，一行代码有：`return bin(eval('0b' + a) + eval('0b' + b))[2:]`，0b means that the number that follows is in binary. `return f"{int(a,2)+int(b,2):b}"`；
+
+## 91. Decode Ways
+- 2019-04-30
+
+有趣的题目，标个:star，之后再解。
+
+```python
+# todo
+```
+## 180. Consecutive Numbers
+- 2019-05-01
+
+五一第一天写个SQL题；
+```
+SELECT DISTINCT
+    l1.Num AS ConsecutiveNums
+FROM
+    Logs l1,
+    Logs l2,
+    Logs l3
+WHERE
+    l1.Id = l2.Id - 1
+    AND l2.Id = l3.Id - 1
+    AND l1.Num = l2.Num
+    AND l2.Num = l3.Num
+;
+```
+
+
+## 37. 解数独
+（现在上leetcode默认都跳中文官网了）
+
+```python
+class Solution:
+    def solveSudoku(self, board: List[List[str]]) -> None:
+        """
+        Do not return anything, modify board in-place instead.
+        """
+        #x,y=(0,0) if self._b[0][0]==0 else self.getNext(0,0)
+        if board[0][0]=='.':#更容易理解的写法
+            self.trysxy(0,0,board)
+        else:
+            x,y=self.getNext(0,0,board)
+            self.trysxy(x,y,board)
+    def checkNotSame(self,x,y,val,board):#检查每行、每列及宫内是否有和b[x,y]相同项
+        for row_item in board[x]: #第x行
+            if row_item==val:
+                return False
+        for rows in board:#y所在列
+            if rows[y]==val:
+                return False
+        ax=x//3*3 #把0~3中的值映射到[0,3]
+        ab=y//3*3
+        for r in range(ax,ax+3):
+            for c in range(ab,ab+3):#注意r==x & c==y的情况下，其实没必要，val不会是0
+                if board[r][c]==val:
+                    return False
+        return True
+    def getNext(self,x,y,board): #得到下一个未填项,从x,y往下数，值等于0就返回新下标
+        for ny in range(y+1,9): #下标是[0,8]
+            if board[x][ny]=='.':
+                return (x,ny)
+        for row in range(x+1,9):
+            for ny in range(0,9):
+                if board[row][ny]=='.':
+                    return (row,ny)
+        return (-1,-1) #不存在下一个未填项的情况
+    def getPrem(self,x,y,board): #得到x，y处可以填的值
+        prem=[]
+        rows=list(board[x])
+        rows.extend([board[i][y] for i in range(9)])
+        cols=set(rows)
+        for i in range(1,10):
+            i=str(i)
+            if i not in cols:
+                prem.append(i)
+        return prem
+    def trysxy(self,x,y,board): #主循环，尝试x，y处的解答
+        if board[x][y]=='.': #不等于0的情况在调用外处理
+            pv=self.getPrem(x,y,board)
+            for v in pv:
+                if self.checkNotSame(x,y,v,board):# 符合 行列宫均满足v符合条件 的
+                    board[x][y]=v
+                    nx,ny=self.getNext(x,y,board) #得到下一个0值格
+                    if nx==-1: #没有下一个0格了；and ny==-1可以写但没必要
+                        return True
+                    else:
+                        _end=self.trysxy(nx,ny,board) #向下尝试,递归
+                        if not _end:
+                            board[x][y]='.' #回溯，继续for v循环
+                            #只需要改x，y处的值，不改其他值
+                        else:
+                            return True
+```
+回溯法，时间效率还行，因为是递归，空间耗费比较大，
+
+```python
+class Solution:
+    def isValidSudoku(self, board: List[List[str]]) -> bool:
+        if board[0][0]!='.':
+            return self.check(0,0,board)
+        else:
+            nx,ny=self.getNext(0,0,board)
+            if nx==-1:
+                return True
+            return self.check(nx,ny,board)
+    def check(self,x,y,b):#检查数独是否合法
+        v=b[x][y]
+        for r in range(0,9):
+            if r!=x:
+                if b[r][y]==v:
+                    return False
+            if r!=y:
+                if b[x][r]==v:
+                    return False
+        ax=x//3*3
+        ab=y//3*3
+        for r in range(ax,ax+3):
+            for c in range(ab,ab+3):
+                if b[r][c]==v and r!=x and c!=y:
+                    return False
+        nx,ny=self.getNext(x,y,b)
+        if nx==-1:
+            return True
+        return self.check(nx,ny,b)
+    def getNext(self,x,y,b):
+        for ny in range(y+1,9):
+            if b[x][ny]!='.':
+                return (x,ny)
+        for r in range(x+1,9):
+            for ny in range(0,9):
+                if b[r][ny]!='.':
+                    return (r,ny)
+        return (-1,-1)
+```
 
 ## 42. Trapping Rain Water
 
-这题2018年在面试中遇到过，当时想了好久才推出递归写法，早就后悔没多刷题了，看到这题更后悔没早点多刷题了。
+这题2018年在面试中遇到过，当时想了好久才推出递归写法，早就后悔没多刷题了，看到这题更后悔没早点多刷题了。不愧是第42题。
 ```python
 # 等我找到我以前的解法
 
